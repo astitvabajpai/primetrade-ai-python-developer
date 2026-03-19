@@ -1,7 +1,7 @@
 # Hyperliquid × Fear & Greed — Trading Intelligence
 
 > Exploring the relationship between Bitcoin market sentiment and trader performance on Hyperliquid DEX.  
-> Built for the Python Development Intern assignment — Anything.ai
+> Built for the Python Development Intern assignment 
 
 ---
 
