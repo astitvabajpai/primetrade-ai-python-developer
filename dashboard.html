@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hyperliquid × Fear & Greed — Trading Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #0a0c0f;
+  --bg2: #111318;
+  --bg3: #181c23;
+  --border: rgba(255,255,255,.07);
+  --border2: rgba(255,255,255,.13);
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --dim: #3a3f4a;
+  --accent: #7c6fcd;
+  --accent2: #4ade80;
+  --accent3: #f97316;
+  --accent4: #38bdf8;
+  --danger: #f87171;
+  --mono: 'Space Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  border-bottom: 1px solid var(--border);
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--accent), #5b4fc4);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 12px; font-weight: 700; color: #fff;
+}
+.header h1 { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+.header-sub { font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent2); box-shadow: 0 0 6px var(--accent2); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── LAYOUT ── */
+.container { max-width: 1320px; margin: 0 auto; padding: 2rem; }
+.section-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 2rem 0 1rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ── KPI STRIP ── */
+.kpi-strip { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.kpi {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.1rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.kpi:hover { border-color: var(--border2); }
+.kpi::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--kpi-color, var(--accent));
+}
+.kpi-label { font-size: 10px; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+.kpi-val { font-size: 22px; font-weight: 600; color: var(--kpi-color, var(--text)); line-height: 1; }
+.kpi-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  transition: border-color .2s;
+}
+.card:hover { border-color: var(--border2); }
+.card-title {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin-bottom: 1rem;
+  display: flex; align-items: center; gap: 6px;
+}
+.card-title span { color: var(--text); font-size: 13px; text-transform: none; font-family: var(--sans); font-weight: 500; letter-spacing: 0; }
+.card-note { font-size: 11px; color: var(--muted); margin-top: 8px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+
+/* ── TABS ── */
+.tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.tab {
+  font-size: 11px; font-family: var(--mono);
+  padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--muted); transition: all .15s;
+}
+.tab:hover { border-color: var(--border2); color: var(--text); }
+.tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ── TABLE ── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; font-weight: 400; }
+td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,255,255,.02); }
+.mono-sm { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.pnl-pos { color: var(--accent2); font-weight: 600; }
+.pnl-neg { color: var(--danger); font-weight: 600; }
+.badge {
+  display: inline-block; font-size: 10px; padding: 2px 7px;
+  border-radius: 4px; font-family: var(--mono); font-weight: 700;
+  letter-spacing: .03em;
+}
+
+/* ── INSIGHTS ── */
+.insight-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.insight {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--ic, var(--accent));
+  border-radius: 0 10px 10px 0;
+  padding: .9rem 1rem;
+  transition: border-color .2s;
+}
+.insight:hover { border-color: var(--ic, var(--accent)); border-left-color: var(--ic, var(--accent)); }
+.insight-title { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+.insight-body { font-size: 11px; color: var(--muted); line-height: 1.6; }
+
+/* ── LOADER ── */
+#loader {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+  z-index: 999; transition: opacity .5s;
+}
+.loader-bar {
+  width: 200px; height: 2px; background: var(--border2); border-radius: 2px; overflow: hidden;
+}
+.loader-fill { height: 100%; background: var(--accent); width: 0%; transition: width .3s; }
+#loader-msg { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+/* ── CHART CANVAS ── */
+.chart-wrap { position: relative; }
+
+@media (max-width: 900px) {
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .insight-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <div style="font-family:var(--mono);font-size:20px;font-weight:700;letter-spacing:.05em">HL × FG</div>
+  <div class="loader-bar"><div class="loader-fill" id="lbar"></div></div>
+  <div id="loader-msg">Loading insights.json…</div>
+</div>
+
+<header class="header">
+  <div class="header-left">
+    <div class="logo">HL</div>
+    <div>
+      <div class="header h1" style="font-size:15px;font-weight:600">Hyperliquid × Fear & Greed</div>
+      <div class="header-sub" id="hdr-range">Trading Intelligence Dashboard</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--muted)">
+    <div class="status-dot"></div> Live data
+  </div>
+</header>
+
+<div class="container" id="main" style="display:none">
+
+  <!-- KPIs -->
+  <div class="section-label">Overview</div>
+  <div class="kpi-strip">
+    <div class="kpi" style="--kpi-color:var(--accent4)">
+      <div class="kpi-label">Traders</div>
+      <div class="kpi-val" id="k-traders">—</div>
+      <div class="kpi-sub">Hyperliquid wallets</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--muted)">
+      <div class="kpi-label">Total trades</div>
+      <div class="kpi-val" id="k-trades">—</div>
+      <div class="kpi-sub" id="k-range">—</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--accent2)">
+      <div class="kpi-label">Cumulative PnL</div>
+      <div class="kpi-val" id="k-pnl">—</div>
+      <div class="kpi-sub">All traders combined</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--accent)">
+      <div class="kpi-label">Overall win rate</div>
+      <div class="kpi-val" id="k-wr">—</div>
+      <div class="kpi-sub">Trades with profit > 0</div>
+    </div>
+    <div class="kpi" style="--kpi-color:var(--accent3)">
+      <div class="kpi-label">FG ↔ PnL corr.</div>
+      <div class="kpi-val" id="k-corr">—</div>
+      <div class="kpi-sub">Pearson r (weak signal)</div>
+    </div>
+  </div>
+
+  <!-- Row 1: PnL by sentiment + Long/Short -->
+  <div class="section-label">Sentiment analysis</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">// <span>Avg PnL & win rate by sentiment</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="c1"></canvas></div>
+      <div class="card-note" id="note1">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">// <span>Long vs short win rate by sentiment</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="c2"></canvas></div>
+      <div class="card-note">Shorts outperform longs in every sentiment zone</div>
+    </div>
+  </div>
+
+  <!-- Row 2: Time series full width -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">// <span>Fear & Greed Index vs daily avg PnL — last 90 days</span></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="c3"></canvas></div>
+    <div class="card-note" id="note3">—</div>
+  </div>
+
+  <!-- Row 3: Coin selector + Hourly -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">// <span>Avg PnL per trade by coin &amp; sentiment</span></div>
+      <div class="tabs" id="coin-tabs"></div>
+      <div class="chart-wrap" style="height:180px"><canvas id="c4"></canvas></div>
+      <div class="card-note" id="note4">—</div>
+    </div>
+    <div class="card">
+      <div class="card-title">// <span>Avg PnL by hour (IST)</span></div>
+      <div class="chart-wrap" style="height:220px"><canvas id="c5"></canvas></div>
+      <div class="card-note">12:00 IST delivers 3× the all-day average</div>
+    </div>
+  </div>
+
+  <!-- Top traders table -->
+  <div class="section-label">Trader leaderboard</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-title">// <span>Top 10 traders — performance overview</span></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Wallet</th><th>Total PnL</th><th>Trades</th><th>Win rate</th><th>Avg PnL / trade</th></tr></thead>
+        <tbody id="trader-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Insights -->
+  <div class="section-label">Key insights</div>
+  <div class="insight-grid">
+    <div class="insight" style="--ic:#7c6fcd">
+      <div class="insight-title">Extreme Greed = best zone</div>
+      <div class="insight-body">Highest avg PnL ($67.9), highest win rate (46.5%). Riding momentum pays more than contrarian caution here.</div>
+    </div>
+    <div class="insight" style="--ic:#4ade80">
+      <div class="insight-title">Contrarian edge in fear</div>
+      <div class="insight-body">ETH (+$197) and MELANIA (+$218) deliver their peak avg PnL during Extreme Fear — ideal for counter-trend positioning.</div>
+    </div>
+    <div class="insight" style="--ic:#38bdf8">
+      <div class="insight-title">Short trades dominate</div>
+      <div class="insight-body">Shorts beat longs in every sentiment. Extreme Greed: shorts avg $114 vs longs $10.5 — a 10× PnL gap.</div>
+    </div>
+    <div class="insight" style="--ic:#f97316">
+      <div class="insight-title">Noon is golden hour</div>
+      <div class="insight-body">12:00 IST averages $131/trade — more than 3× the all-day average. 7am and 11am also consistently outperform.</div>
+    </div>
+    <div class="insight" style="--ic:#f87171">
+      <div class="insight-title">Sentiment ≠ daily PnL</div>
+      <div class="insight-body">Pearson r between FG Index and daily avg PnL is just 0.04. Sentiment is a directional filter, not a return predictor.</div>
+    </div>
+    <div class="insight" style="--ic:#a78bfa">
+      <div class="insight-title">High PnL ≠ high win rate</div>
+      <div class="insight-body">Top trader made $2.14M with only 34% win rate — evidence of asymmetric bet sizing, not consistency grinding.</div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ── LOAD DATA ──────────────────────────────────────────────────────────────
+const SENT   = ["Extreme Fear","Fear","Neutral","Greed","Extreme Greed"];
+const SSHORT = ["Ext. Fear","Fear","Neutral","Greed","Ext. Greed"];
+const COINS  = ["BTC","ETH","SOL","HYPE","@107","MELANIA"];
+const COIN_NOTES = {
+  BTC:     "BTC: best during Fear — mild contrarian edge",
+  ETH:     "ETH: peaks in Fear & Extreme Fear — strong contrarian signal",
+  SOL:     "SOL: momentum coin — peaks in Greed/Neutral",
+  HYPE:    "HYPE: relatively flat across sentiment zones",
+  "@107":  "@107: flips — loses in Fear, explodes in Extreme Greed (+$191)",
+  MELANIA: "MELANIA: highest avg PnL in Extreme Fear (+$218)"
+};
+
+let DATA = null;
+let c4chart = null;
+
+function setLoader(pct, msg) {
+  document.getElementById("lbar").style.width = pct + "%";
+  document.getElementById("loader-msg").textContent = msg;
+}
+
+async function init() {
+  setLoader(20, "Fetching insights.json…");
+  try {
+    const res = await fetch("insights.json");
+    if (!res.ok) throw new Error("insights.json not found");
+    DATA = await res.json();
+  } catch(e) {
+    document.getElementById("loader-msg").textContent = "⚠ Could not load insights.json — run analysis.py first.";
+    return;
+  }
+  setLoader(60, "Rendering charts…");
+  await new Promise(r => setTimeout(r, 100));
+  render();
+  setLoader(100, "Done");
+  await new Promise(r => setTimeout(r, 300));
+  const loader = document.getElementById("loader");
+  loader.style.opacity = "0";
+  setTimeout(() => loader.style.display = "none", 500);
+  document.getElementById("main").style.display = "block";
+}
+
+function fmt(n, prefix="$", dec=1) {
+  if (n == null) return "N/A";
+  const abs = Math.abs(n);
+  const s = abs >= 1e6 ? (abs/1e6).toFixed(dec)+"M"
+           : abs >= 1e3 ? (abs/1e3).toFixed(dec)+"K"
+           : abs.toFixed(dec);
+  return (n < 0 ? "-" : "") + prefix + s;
+}
+
+function render() {
+  const S = DATA.summary;
+  const P = DATA.pnl_by_sentiment;
+  const LS = DATA.long_short_by_sentiment;
+  const H = DATA.hourly_pnl;
+  const D = DATA.daily_tail90;
+  const C = DATA.coin_by_sentiment;
+
+  // KPIs
+  document.getElementById("k-traders").textContent = S.total_traders;
+  document.getElementById("k-trades").textContent = (S.total_trades/1000).toFixed(0)+"K";
+  document.getElementById("k-range").textContent = S.date_range_start.slice(0,7) + " → " + S.date_range_end.slice(0,7);
+  document.getElementById("k-pnl").textContent = fmt(S.total_pnl_usd);
+  document.getElementById("k-wr").textContent = S.overall_win_rate.toFixed(1)+"%";
+  document.getElementById("k-corr").textContent = DATA.correlation_fg_pnl.toFixed(4);
+  document.getElementById("hdr-range").textContent = S.date_range_start + " – " + S.date_range_end;
+
+  // Chart defaults
+  Chart.defaults.color = "#6b7280";
+  Chart.defaults.borderColor = "rgba(255,255,255,.06)";
+  Chart.defaults.font.family = "'DM Sans', sans-serif";
+  Chart.defaults.font.size   = 11;
+
+  const gridC = "rgba(255,255,255,.05)";
+  const tickC = "#6b7280";
+
+  // ── C1: avg pnl + win rate ──
+  const avgPnls = SENT.map(s => P[s]?.avg_pnl ?? 0);
+  const wrs     = SENT.map(s => P[s]?.win_rate ?? 0);
+  const best    = SENT[avgPnls.indexOf(Math.max(...avgPnls))];
+  document.getElementById("note1").textContent = `Best sentiment: ${best} — avg $${Math.max(...avgPnls).toFixed(1)} / trade`;
+
+  new Chart(document.getElementById("c1"), {
+    data: {
+      labels: SSHORT,
+      datasets: [
+        { type:"bar",  label:"Avg PnL ($)", data: avgPnls, backgroundColor:"rgba(124,111,205,.65)", yAxisID:"y" },
+        { type:"line", label:"Win Rate (%)", data: wrs, borderColor:"#4ade80", backgroundColor:"transparent",
+          pointRadius:4, pointBackgroundColor:"#4ade80", borderWidth:2, tension:.3, yAxisID:"y2" }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+      scales: {
+        x: { ticks:{ color:tickC }, grid:{ color:gridC } },
+        y: { ticks:{ color:"#7c6fcd", callback:v=>"$"+v }, grid:{ color:gridC } },
+        y2:{ position:"right", ticks:{ color:"#4ade80", callback:v=>v+"%" }, grid:{ display:false } }
+      }
+    }
+  });
+
+  // ── C2: buy vs sell win rate ──
+  const buyWR  = SENT.map(s => LS[s]?.BUY?.win_rate  ?? 0);
+  const sellWR = SENT.map(s => LS[s]?.SELL?.win_rate ?? 0);
+
+  new Chart(document.getElementById("c2"), {
+    type:"bar",
+    data: { labels: SSHORT, datasets:[
+      { label:"Buy (long)",  data: buyWR,  backgroundColor:"rgba(56,189,248,.65)" },
+      { label:"Sell (short)",data: sellWR, backgroundColor:"rgba(249,115,22,.75)" }
+    ]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+      scales: {
+        x: { ticks:{ color:tickC }, grid:{ color:gridC } },
+        y: { ticks:{ color:tickC, callback:v=>v+"%" }, grid:{ color:gridC }, min:0, max:75 }
+      }
+    }
+  });
+
+  // ── C3: time series ──
+  const corrDesc = Math.abs(DATA.correlation_fg_pnl) < 0.2 ? "weak — sentiment is a filter, not a predictor"
+                 : Math.abs(DATA.correlation_fg_pnl) < 0.5 ? "moderate"
+                 : "strong";
+  document.getElementById("note3").textContent = `Pearson r = ${DATA.correlation_fg_pnl.toFixed(4)} (${corrDesc})`;
+
+  const shortLabels = D.dates.map((d,i) => {
+    const day = new Date(d).getDate();
+    return day === 1 ? d.slice(0,7) : (i % 10 === 0 ? d.slice(5) : "");
+  });
+
+  new Chart(document.getElementById("c3"), {
+    data: {
+      labels: D.dates,
+      datasets: [
+        { type:"line", data: D.fg_values, borderColor:"#7c6fcd", backgroundColor:"rgba(124,111,205,.08)",
+          fill:true, borderWidth:1.5, pointRadius:0, tension:.3, yAxisID:"y" },
+        { type:"bar",  data: D.avg_pnl.map(v => Math.min(Math.max(v,-100),600)),
+          backgroundColor: D.avg_pnl.map(v => v>=0 ? "rgba(74,222,128,.5)" : "rgba(248,113,113,.5)"), yAxisID:"y2" }
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+      scales: {
+        x: { ticks:{ color:tickC, autoSkip:true, maxTicksLimit:10, font:{size:10} }, grid:{ display:false } },
+        y: { position:"left",  ticks:{ color:"#7c6fcd", font:{size:10} }, grid:{ color:gridC },
+             title:{ display:true, text:"FG Index", color:"#7c6fcd", font:{size:10} } },
+        y2:{ position:"right", ticks:{ color:tickC, font:{size:10}, callback:v=>"$"+v }, grid:{ display:false } }
+      }
+    }
+  });
+
+  // ── C4: coin selector ──
+  const tabsEl = document.getElementById("coin-tabs");
+  COINS.forEach((coin, i) => {
+    const btn = document.createElement("button");
+    btn.className = "tab" + (i===0?" active":"");
+    btn.textContent = coin;
+    btn.onclick = () => {
+      tabsEl.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      btn.classList.add("active");
+      showCoin(coin);
+    };
+    tabsEl.appendChild(btn);
+  });
+
+  function showCoin(coin) {
+    const vals = SENT.map(s => C[coin]?.[s] ?? 0);
+    const bgColors = vals.map(v => v >= 0 ? "rgba(74,222,128,.65)" : "rgba(248,113,113,.65)");
+    document.getElementById("note4").textContent = COIN_NOTES[coin] || "";
+    if (c4chart) c4chart.destroy();
+    c4chart = new Chart(document.getElementById("c4"), {
+      type:"bar",
+      data:{ labels:SSHORT, datasets:[{ data:vals, backgroundColor:bgColors }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+        scales:{
+          x:{ ticks:{ color:tickC, font:{size:10} }, grid:{ color:gridC } },
+          y:{ ticks:{ color:tickC, callback:v=>"$"+v }, grid:{ color:gridC } }
+        }
+      }
+    });
+  }
+  showCoin("BTC");
+
+  // ── C5: hourly ──
+  const hLabels = Array.from({length:24},(_,i)=>i===0?"12am":i<12?i+"am":i===12?"12pm":(i-12)+"pm");
+  const hVals   = Array.from({length:24},(_,i) => H[i.toString()] ?? 0);
+  const peakH   = Math.max(...hVals);
+
+  new Chart(document.getElementById("c5"), {
+    type:"bar",
+    data:{ labels:hLabels, datasets:[{
+      data: hVals,
+      backgroundColor: hVals.map(v =>
+        v >= peakH * .9 ? "#4ade80"
+        : v >= peakH * .6 ? "#86efac"
+        : v >= peakH * .4 ? "#bbf7d0"
+        : "rgba(74,222,128,.25)"
+      )
+    }]},
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ ticks:{ color:tickC, autoSkip:true, maxTicksLimit:12, font:{size:10} }, grid:{ display:false } },
+        y:{ ticks:{ color:tickC, callback:v=>"$"+v }, grid:{ color:gridC } }
+      }
+    }
+  });
+
+  // ── Trader table ──
+  const tbody = document.getElementById("trader-tbody");
+  const sentColors = {
+    "Extreme Fear":"#f87171","Fear":"#fb923c","Neutral":"#94a3b8","Greed":"#86efac","Extreme Greed":"#4ade80"
+  };
+  DATA.top_traders.forEach((t, i) => {
+    const wr = t.win_rate.toFixed(1);
+    const wrColor = wr>50?"#4ade80":wr>40?"#fbbf24":"#f87171";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${i+1}</td>
+      <td class="mono-sm">${t.account.slice(0,14)}…</td>
+      <td class="pnl-pos">${fmt(t.total_pnl)}</td>
+      <td style="color:var(--muted)">${t.trade_count.toLocaleString()}</td>
+      <td>
+        <span style="background:${wrColor}22;color:${wrColor};font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700">
+          ${wr}%
+        </span>
+      </td>
+      <td style="color:var(--muted);font-family:var(--mono);font-size:10px">${fmt(t.avg_pnl)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+init();
+</script>
+</body>
+</html>
